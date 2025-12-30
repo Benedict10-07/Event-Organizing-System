@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register | EOS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="auth-wrapper">
+        <div class="auth-card" style="max-width: 500px;">
+            <div class="auth-logo-container"><img src="assets/img/EOS_logo.png" alt="Logo" class="auth-logo"></div>
+            <div class="auth-header">
+                <h2>Create Account</h2>
+                <p>Join us to start planning your perfect event.</p>
+            </div>
+            
+            <div id="errorAlert" class="alert alert-error" style="display:none;"></div>
+
+            <form action="php/auth_register.php" method="POST">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" name="full_name" required placeholder="e.g. Juan Dela Cruz">
+                </div>
+                <div class="form-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group"><label>Email</label><input type="email" name="email" required></div>
+                    <div class="form-group"><label>Contact No.</label><input type="text" name="contact_number" required></div>
+                </div>
+                <div class="form-group"><label>Username</label><input type="text" name="username" required></div>
+                <div class="form-grid-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group"><label>Password</label><input type="password" name="password" required></div>
+                    <div class="form-group"><label>Confirm</label><input type="password" name="confirm_password" required></div>
+                </div>
+                <button type="submit" class="btn btn-solid-vino full-width">Sign Up</button>
+            </form>
+            <div class="auth-footer">
+                <p>Already have an account? <a href="login.html">Sign In</a></p>
+                <p><a href="index.html" class="back-link">← Back to Home</a></p>
+            </div>
+        </div>
+    </div>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const errorMap = {
+            'empty_fields': 'Please fill in all fields.',
+            'password_mismatch': 'Passwords do not match.',
+            'username_taken': 'Username is already taken.',
+            'sql_error': 'System error. Please try again.'
+        };
+        if(params.has('error')){
+            const errDiv = document.getElementById('errorAlert');
+            errDiv.style.display = 'block';
+            errDiv.textContent = errorMap[params.get('error')] || "An error occurred.";
+        }
+    </script>
+</body>
+</html>

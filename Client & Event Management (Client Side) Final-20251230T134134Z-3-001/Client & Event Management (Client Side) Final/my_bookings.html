@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bookings | EOS</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/booking.css"> 
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* Card Styles */
+        .booking-card { 
+            background: white; border-radius: 12px; padding: 25px; margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05); border-left: 5px solid #5A1F2E;
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;
+            transition: transform 0.2s; position: relative;
+        }
+        .booking-card:hover { transform: translateY(-3px); }
+        .bk-info h3 { font-size: 1.2rem; margin-bottom: 5px; color: #333; }
+        .bk-meta { font-size: 0.9rem; color: #666; display: flex; gap: 15px; }
+        .bk-meta span { display: flex; align-items: center; gap: 6px; }
+        
+        /* Status Colors */
+        .bk-status { padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: inline-block; }
+        .status-Pending { background: #fff3cd; color: #856404; }
+        .status-Confirmed { background: #d4edda; color: #155724; }
+        .status-Ongoing { background: #cce5ff; color: #004085; } /* New Ongoing Blue */
+        .status-Cancelled { background: #f8d7da; color: #721c24; }
+        .status-Completed { background: #d1ecf1; color: #0c5460; }
+        
+        .bk-actions { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-sm { padding: 8px 15px; font-size: 0.85rem; border-radius: 4px; border: 1px solid transparent; cursor: pointer; transition: 0.2s; }
+        
+        /* Buttons */
+        .btn-edit { background: #e0e0e0; color: #333; border-color: #ccc; }
+        .btn-edit:hover { background: #d0d0d0; }
+        .btn-view-slip { background: white; color: var(--vino); border-color: var(--vino); }
+        .btn-view-slip:hover { background: var(--vino); color: white; }
+        .btn-pay { background: var(--vino); color: white; }
+        .btn-pay:hover { background: var(--vino-dark); }
+        .btn-receipt { background: #28a745; color: white; }
+        .btn-receipt:hover { background: #218838; }
+        .btn-rate { background: #ffc107; color: #333; font-weight: 700; border: 1px solid #e0a800; }
+        .btn-rate:hover { background: #e0a800; }
+        .btn-cancel { background: white; color: #dc3545; border: 1px solid #dc3545; }
+        .btn-cancel:hover { background: #dc3545; color: white; }
+        
+        /* Payment Modal */
+        .pay-header-bg { background: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 20px; border: 1px solid #eee; }
+        .pay-amount-label { font-size: 0.85rem; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        .pay-amount-value { font-size: 2rem; color: var(--vino-dark); font-weight: 700; margin-top: 5px; }
+        .pay-method-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+        .pay-option { border: 2px solid #eee; border-radius: 8px; padding: 15px; text-align: center; cursor: pointer; transition: 0.2s; position: relative; overflow: hidden; }
+        .pay-option:hover { border-color: #ddd; }
+        .pay-option.selected { border-color: var(--vino); background: #fff5f5; }
+        .pay-option.selected::after { content: '\f00c'; font-family: 'Font Awesome 5 Free'; font-weight: 900; position: absolute; top: 5px; right: 5px; color: var(--vino); font-size: 0.8rem; }
+        .pay-option i { display: block; margin-bottom: 8px; }
+        .pay-option span { font-weight: 600; font-size: 0.9rem; color: #444; }
+        .form-section-title { font-size: 0.85rem; font-weight: 700; color: #888; margin-bottom: 10px; text-transform: uppercase; border-bottom: 1px solid #eee; padding-bottom: 5px; margin-top: 15px; }
+        .pay-input-group { margin-bottom: 12px; }
+        .pay-input-group label { display: block; font-size: 0.85rem; color: #555; margin-bottom: 5px; font-weight: 500; }
+        .pay-input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.95rem; transition: 0.2s; }
+        .pay-input:focus { border-color: var(--vino); outline: none; }
+        .pay-input[readonly] { background-color: #f4f4f4; color: #777; cursor: not-allowed; border-color: #eee; }
+
+        .empty-state { text-align: center; padding: 50px 0; color: #888; }
+
+        /* Feedback Modal */
+        .star-rating { display: flex; justify-content: center; gap: 10px; margin: 20px 0; direction: rtl; }
+        .star-rating input { display: none; }
+        .star-rating label { font-size: 2rem; color: #ddd; cursor: pointer; transition: 0.2s; }
+        .star-rating input:checked ~ label, .star-rating label:hover, .star-rating label:hover ~ label { color: #ffc107; }
+        .feedback-textarea { width: 100%; padding: 15px; border: 1px solid #ddd; border-radius: 8px; resize: vertical; font-family: 'Poppins', sans-serif; min-height: 100px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <nav class="navbar">
+            <div class="logo"><img src="assets/img/EOS_logo.png" alt="EOS Logo"></div>
+            <div class="hamburger"><div class="line"></div><div class="line"></div><div class="line"></div></div>
+            <ul class="nav-links">
+                <li><a href="index.html" class="nav-item">Home</a></li>
+                <li><a href="book_now.html" class="nav-item">Book Now</a></li>
+                <li><a href="my_bookings.html" class="nav-item active">My Bookings</a></li>
+                <li class="mobile-auth"><a href="login.html" class="btn btn-outline-light">Sign In</a></li>
+            </ul>
+            <div class="auth-buttons" id="desktopAuthContainer">
+                <a href="login.html" class="btn btn-outline-light">Sign In</a>
+            </div>
+            <div class="user-dropdown" id="userDropdownContainer" style="display: none;">
+                <div class="user-trigger">
+                    <div class="user-avatar" id="userAvatar">U</div>
+                    <span class="username-text" id="userNameDisplay">User</span>
+                    <i class="fas fa-chevron-down arrow-icon"></i>
+                </div>
+                <div class="dropdown-menu">
+                    <a href="my_bookings.html" class="dropdown-item"><i class="fas fa-calendar-check"></i> My Bookings</a>
+                    <div class="dropdown-divider"></div>
+                    <a href="php/logout.php" class="dropdown-item logout-item"><i class="fas fa-sign-out-alt"></i> Logout</a>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="booking-header">
+        <div class="container">
+            <h1>My Event History</h1>
+            <p>Track, manage, and rate your events.</p>
+        </div>
+    </div>
+
+    <section class="section-padding" style="background-color: #F8F5F2; min-height: 60vh;">
+        <div class="container" id="bookingsList">
+            <div class="empty-state">Loading records...</div>
+        </div>
+    </section>
+
+    <div id="cancelModal" class="modal-overlay">
+        <div class="modal-container" style="max-width: 400px; text-align: center;">
+            <div class="modal-body" style="padding-top: 30px;">
+                <i class="fas fa-times-circle" style="font-size: 3rem; color: #dc3545; margin-bottom: 20px;"></i>
+                <h3 style="color:#333;">Cancel Request?</h3>
+                <p style="color: #666; margin-bottom: 30px;">Are you sure you want to cancel this booking request? This action cannot be undone.</p>
+                <input type="hidden" id="cancelTargetId">
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button class="btn btn-outline-light" style="color: #555; border-color: #ccc; width:auto;" onclick="closeModal('cancelModal')">No, Keep it</button>
+                    <button class="btn btn-solid-vino" style="background: #dc3545; width:auto;" onclick="processCancel()">Yes, Cancel it</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="deleteModal" class="modal-overlay">
+        <div class="modal-container" style="max-width: 400px; text-align: center;">
+            <div class="modal-body" style="padding-top: 30px;">
+                <i class="fas fa-trash-alt" style="font-size: 3rem; color: #dc3545; margin-bottom: 20px;"></i>
+                <h3 style="color:#333;">Delete History?</h3>
+                <p style="color: #666; margin-bottom: 30px;">This will permanently remove this event from your history.</p>
+                <input type="hidden" id="deleteTargetId">
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button class="btn btn-outline-light" style="color: #555; border-color: #ccc; width:auto;" onclick="closeModal('deleteModal')">Cancel</button>
+                    <button class="btn btn-solid-vino" style="background: #dc3545; width:auto;" onclick="processDelete()">Delete Permanently</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="editModal" class="modal-overlay">
+        <div class="modal-container expanded">
+            <div class="modal-header">
+                <h2 id="editModalTitle">Edit Booking</h2>
+                <button class="close-modal" onclick="closeModal('editModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editBookingId">
+                <div class="modal-left">
+                    <div class="modal-section-title">1. Venue Location</div>
+                    <div style="margin-bottom: 25px;">
+                        <input type="text" id="editVenue" class="form-control" placeholder="Enter venue address" style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd;">
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <div class="modal-section-title" style="margin:0;">2. Modify Services</div>
+                        <span id="editEventBadge" style="background:var(--vino); color:white; padding: 2px 10px; border-radius: 10px; font-size: 0.75rem; text-transform: uppercase;"></span>
+                    </div>
+                    <div id="editServicesList"></div>
+                </div>
+                <div class="modal-right">
+                    <div class="modal-sidebar-card">
+                        <div class="sidebar-title">Summary</div>
+                        <div class="sidebar-row"><span>Base Package:</span><span id="editBasePrice">₱0</span></div>
+                        <div class="summary-scroll-area" id="editSummaryList"></div>
+                        <div class="sidebar-row total-row"><span>New Total:</span><span id="editTotalDisplay">₱0.00</span></div>
+                        <button class="btn-confirm-modal" onclick="saveBookingChanges()">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="payModal" class="modal-overlay">
+        <div class="modal-container" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Secure Payment</h2>
+                <button class="close-modal" onclick="closeModal('payModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="pay-header-bg">
+                    <div class="pay-amount-label">Total Amount Due</div>
+                    <div class="pay-amount-value" id="payAmountDisplay">₱0.00</div>
+                </div>
+
+                <div class="pay-method-grid">
+                    <div class="pay-option selected" onclick="selectMethod(this, 'gcash')">
+                        <i class="fas fa-wallet" style="color:#007bff; font-size:1.5rem;"></i>
+                        <span>GCash</span>
+                    </div>
+                    <div class="pay-option" onclick="selectMethod(this, 'bank')">
+                        <i class="fas fa-university" style="color:#28a745; font-size:1.5rem;"></i>
+                        <span>Bank Transfer</span>
+                    </div>
+                </div>
+
+                <div class="form-section-title">Transfer Details</div>
+                
+                <div class="pay-input-group">
+                    <label>Transaction ID (Auto-Generated)</label>
+                    <input type="text" id="payRefNum" class="pay-input" readonly style="font-family: monospace; letter-spacing: 1px; font-weight: 700; color: #555;">
+                </div>
+
+                <div class="pay-input-group">
+                    <label>Sender Bank / E-Wallet Name</label>
+                    <input type="text" id="payBankName" class="pay-input" placeholder="e.g. BDO, GCash, BPI">
+                </div>
+
+                <div class="pay-input-group">
+                    <label>Sender Account Name</label>
+                    <input type="text" id="paySenderName" class="pay-input" placeholder="Account Holder Name">
+                </div>
+
+                <div class="pay-input-group">
+                    <label>Sender Account Number</label>
+                    <input type="text" id="payAccountNum" class="pay-input" placeholder="e.g. 09123456789 or 123-456-7890">
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <input type="hidden" id="payBookingId">
+                <button class="btn btn-solid-vino full-width" onclick="processPayment()">Confirm Payment</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="feedbackModal" class="modal-overlay">
+        <div class="modal-container" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>Rate Your Experience</h2>
+                <button class="close-modal" onclick="closeModal('feedbackModal')">&times;</button>
+            </div>
+            <div class="modal-body" style="text-align: center;">
+                <p style="color:#666; margin-bottom:10px;">How was your event?</p>
+                <div class="star-rating">
+                    <input type="radio" id="star5" name="rating" value="5"><label for="star5" title="5 stars"><i class="fas fa-star"></i></label>
+                    <input type="radio" id="star4" name="rating" value="4"><label for="star4" title="4 stars"><i class="fas fa-star"></i></label>
+                    <input type="radio" id="star3" name="rating" value="3"><label for="star3" title="3 stars"><i class="fas fa-star"></i></label>
+                    <input type="radio" id="star2" name="rating" value="2"><label for="star2" title="2 stars"><i class="fas fa-star"></i></label>
+                    <input type="radio" id="star1" name="rating" value="1"><label for="star1" title="1 star"><i class="fas fa-star"></i></label>
+                </div>
+                <textarea id="feedbackComment" class="feedback-textarea" placeholder="Share your thoughts..."></textarea>
+                <input type="hidden" id="feedbackBookingId">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-solid-vino full-width" onclick="submitFeedback()">Submit Review</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="receiptModal" class="modal-overlay">
+        <div class="modal-container receipt-modal-container">
+            <div class="modal-header">
+                <h2 id="receiptTitle">Document</h2>
+                <button class="close-modal no-print" onclick="closeModal('receiptModal')">&times;</button>
+            </div>
+            <div class="modal-body receipt-body">
+                <div id="receiptContent"></div>
+            </div>
+            <div class="modal-footer receipt-footer">
+                <button class="btn btn-solid-vino no-print" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/script.js"></script>
+    <script>
+        let userBookings = []; 
+        let currentEditData = { basePrice: 0, availableServices: [] };
+        let userProfile = {};
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkSession(); 
+            if(!isUserLoggedIn) { window.location.href = 'login.html?toast=login_required'; return; }
+            
+            try {
+                const res = await fetch('php/api_session.php');
+                const data = await res.json();
+                if(data.user) userProfile = data.user;
+            } catch(e) { console.error("User fetch error:", e); }
+
+            loadBookings();
+            createToastContainer();
+        });
+
+        // --- LOAD BOOKINGS ---
+        async function loadBookings() {
+            try {
+                const res = await fetch('php/api_get_my_bookings.php');
+                const result = await res.json();
+                const container = document.getElementById('bookingsList');
+
+                if (!result.success || result.data.length === 0) {
+                    container.innerHTML = `<div class="empty-state"><p>No bookings found.</p><a href="book_now.html" class="btn btn-solid-vino">Book Now</a></div>`;
+                    return;
+                }
+
+                userBookings = result.data;
+
+                container.innerHTML = result.data.map(bk => {
+                    let actionButtons = '';
+                    let autoDeleteMsg = ''; 
+
+                    // --- REUSABLE DELETE BUTTON ---
+                    const deleteBtn = `<button class="btn-sm" style="background:white; color:#dc3545; border:1px solid #dc3545;" onclick="openDeleteModal('${bk.booking_id}')" title="Delete History"><i class="fas fa-trash"></i></button>`;
+
+                    if(bk.booking_status === 'Pending') {
+                        // Pending: Edit, Slip, CANCEL
+                        actionButtons = `
+                            <button class="btn-sm btn-edit" onclick="openEditModal('${bk.booking_id}')"><i class="fas fa-edit"></i> Edit</button>
+                            <button class="btn-sm btn-view-slip" onclick="viewRequestSlip('${bk.booking_id}')"><i class="fas fa-file-invoice"></i> View Slip</button>
+                            <button class="btn-sm btn-cancel" onclick="openCancelModal('${bk.booking_id}')"><i class="fas fa-times"></i> Cancel</button>
+                        `;
+                    } else if(bk.booking_status === 'Confirmed') {
+                        // Confirmed: Pay
+                        actionButtons = `<button class="btn-sm btn-pay" onclick="openPayModal('${bk.booking_id}')"><i class="fas fa-credit-card"></i> Pay Now</button>`;
+                    } else if(bk.booking_status === 'Ongoing') {
+                        // Ongoing: Receipt (Blue)
+                        actionButtons = `<button class="btn-sm btn-receipt" onclick="viewReceipt('${bk.booking_id}')"><i class="fas fa-receipt"></i> Receipt</button>
+                                         <span style="font-size:0.8rem; color:#007bff; font-weight:600; margin-left:10px;">In Progress...</span>`;
+                    } else if(bk.booking_status === 'Completed') {
+                        // Completed: Receipt, Rate, DELETE
+                        actionButtons = `<button class="btn-sm btn-receipt" onclick="viewReceipt('${bk.booking_id}')"><i class="fas fa-receipt"></i> Receipt</button>`;
+                        
+                        if(bk.has_feedback == 0) {
+                            actionButtons += `<button class="btn-sm btn-rate" onclick="openFeedbackModal('${bk.booking_id}')"><i class="fas fa-star"></i> Rate</button>`;
+                        } else {
+                            actionButtons += `<span style="font-size:0.8rem; color:#28a745; align-self:center; font-weight:600; margin-left:10px;"><i class="fas fa-check"></i> Rated</span>`;
+                        }
+                        
+                        actionButtons += deleteBtn;
+                        autoDeleteMsg = `<div style="font-size: 0.75rem; color: #999; margin-top: 8px; font-style:italic;">Auto-deletes 7 days after event</div>`;
+                    
+                    } else if(bk.booking_status === 'Cancelled') {
+                        // Cancelled: DELETE
+                        actionButtons = `<span style="color:#999; font-size:0.8rem; margin-right:10px;">Cancelled</span>` + deleteBtn;
+                        autoDeleteMsg = `<div style="font-size: 0.75rem; color: #dc3545; margin-top: 8px; font-style:italic;">Auto-deletes in 1 hour</div>`;
+                    }
+
+                    return `
+                    <div class="booking-card reveal-up">
+                        <div class="bk-info">
+                            <h3>${bk.event_type} <span style="color:#888; font-weight:400;">— ${bk.package_name || 'Custom'}</span></h3>
+                            <div class="bk-meta">
+                                <span><i class="fas fa-calendar-alt"></i> ${bk.event_date}</span>
+                                <span><i class="fas fa-map-marker-alt"></i> ${bk.venue_name}</span>
+                                <span><i class="fas fa-receipt"></i> ${bk.booking_id}</span>
+                            </div>
+                            <div class="bk-actions">${actionButtons}</div>
+                        </div>
+                        <div class="bk-right" style="text-align:right;">
+                            <div style="font-size: 1.2rem; font-weight: 700; color: #5A1F2E; margin-bottom: 5px;">₱${parseFloat(bk.agreed_budget).toLocaleString()}</div>
+                            <span class="bk-status status-${bk.booking_status}">${bk.booking_status === 'Completed' ? 'COMPLETED' : bk.booking_status}</span>
+                            ${autoDeleteMsg}
+                        </div>
+                    </div>`;
+                }).join('');
+            } catch (error) { console.error(error); }
+        }
+
+        // --- CANCEL MODAL LOGIC ---
+        function openCancelModal(id) {
+            document.getElementById('cancelTargetId').value = id;
+            document.getElementById('cancelModal').classList.add('active');
+        }
+
+        async function processCancel() {
+            const id = document.getElementById('cancelTargetId').value;
+            const btn = document.querySelector('#cancelModal .btn-solid-vino');
+            const origText = btn.textContent;
+            btn.textContent = "Cancelling..."; btn.disabled = true;
+
+            try {
+                const res = await fetch('php/api_cancel_booking.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ booking_id: id })
+                });
+                const result = await res.json();
+                
+                if(result.success) {
+                    showToast("Booking request cancelled.", "info");
+                    closeModal('cancelModal');
+                    loadBookings();
+                } else {
+                    showToast("Error: " + result.message, "error");
+                }
+            } catch(e) { console.error(e); }
+            btn.textContent = origText; btn.disabled = false;
+        }
+
+        // --- DELETE MODAL LOGIC ---
+        function openDeleteModal(id) {
+            document.getElementById('deleteTargetId').value = id;
+            document.getElementById('deleteModal').classList.add('active');
+        }
+
+        async function processDelete() {
+            const id = document.getElementById('deleteTargetId').value;
+            const btn = document.querySelector('#deleteModal .btn-solid-vino');
+            const origText = btn.textContent;
+            btn.textContent = "Deleting..."; btn.disabled = true;
+
+            try {
+                const res = await fetch('php/api_delete_booking.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ booking_id: id })
+                });
+                const result = await res.json();
+                
+                if(result.success) {
+                    showToast("History removed.", "success");
+                    closeModal('deleteModal');
+                    loadBookings(); 
+                } else {
+                    showToast("Error: " + result.message, "error");
+                }
+            } catch(e) { console.error(e); }
+            btn.textContent = origText; btn.disabled = false;
+        }
+
+        // --- PAYMENT LOGIC ---
+        function openPayModal(id) {
+            const booking = userBookings.find(b => b.booking_id === id);
+            if(!booking) return;
+            document.getElementById('payBookingId').value = id;
+            document.getElementById('payAmountDisplay').textContent = '₱' + parseFloat(booking.agreed_budget).toLocaleString();
+            const refNo = 'TRX-' + Math.floor(100000 + Math.random() * 900000);
+            document.getElementById('payRefNum').value = refNo;
+            document.getElementById('paySenderName').value = userProfile.full_name || '';
+            document.getElementById('payBankName').value = '';
+            document.getElementById('payAccountNum').value = '';
+            document.getElementById('payModal').classList.add('active');
+        }
+
+        function selectMethod(el, method) {
+            document.querySelectorAll('.pay-option').forEach(o => o.classList.remove('selected'));
+            el.classList.add('selected');
+            const bankInput = document.getElementById('payBankName');
+            if(method === 'gcash') bankInput.value = "GCash";
+            else bankInput.value = "";
+        }
+
+        async function processPayment() {
+            const ref = document.getElementById('payRefNum').value;
+            const sender = document.getElementById('paySenderName').value;
+            const bank = document.getElementById('payBankName').value;
+            const accNum = document.getElementById('payAccountNum').value;
+            if(!sender || !bank || !accNum) { showToast('Please complete all payment details.', 'warning'); return; }
+            const btn = document.querySelector('#payModal .btn-solid-vino');
+            const originalText = btn.textContent; btn.textContent = "Verifying..."; btn.disabled = true;
+            setTimeout(async () => {
+                const id = document.getElementById('payBookingId').value;
+                const res = await fetch('php/api_pay_booking.php', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ booking_id: id, ref_num: ref }) });
+                const result = await res.json();
+                if(result.success) { 
+                    showToast('Payment Verified & Completed!', 'success'); 
+                    closeModal('payModal'); 
+                    loadBookings(); 
+                } 
+                else { showToast('Payment failed.', 'error'); }
+                btn.textContent = originalText; btn.disabled = false;
+            }, 2000); 
+        }
+
+        // --- FEEDBACK ---
+        function openFeedbackModal(id) {
+            document.getElementById('feedbackBookingId').value = id;
+            document.getElementById('feedbackComment').value = '';
+            document.querySelectorAll('input[name="rating"]').forEach(r => r.checked = false);
+            document.getElementById('feedbackModal').classList.add('active');
+        }
+
+        async function submitFeedback() {
+            const id = document.getElementById('feedbackBookingId').value;
+            const comment = document.getElementById('feedbackComment').value;
+            const ratingEl = document.querySelector('input[name="rating"]:checked');
+            if(!ratingEl) { showToast("Please select a star rating.", 'warning'); return; }
+            const btn = document.querySelector('#feedbackModal .btn-solid-vino');
+            const originalText = btn.textContent;
+            btn.textContent = "Submitting..."; btn.disabled = true;
+            try {
+                const res = await fetch('php/api_submit_feedback.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ booking_id: id, rating: ratingEl.value, comment: comment })
+                });
+                const result = await res.json();
+                if(result.success) {
+                    showToast("Thank you for your feedback!", 'success');
+                    closeModal('feedbackModal');
+                    loadBookings(); 
+                } else {
+                    showToast("Error: " + (result.message || 'Unknown error'), 'error');
+                }
+            } catch(e) { console.error(e); }
+            btn.textContent = originalText; btn.disabled = false;
+        }
+
+        // --- EDIT ---
+        async function openEditModal(id) {
+            const booking = userBookings.find(b => b.booking_id === id);
+            if(!booking) return;
+            document.getElementById('editBookingId').value = id;
+            document.getElementById('editVenue').value = booking.venue_name;
+            document.getElementById('editModalTitle').textContent = "Edit " + (booking.package_name || 'Custom Package');
+            document.getElementById('editTotalDisplay').textContent = '₱' + parseFloat(booking.agreed_budget).toLocaleString();
+            document.getElementById('editServicesList').innerHTML = '<div style="padding:20px; text-align:center;">Loading options...</div>';
+            document.getElementById('editSummaryList').innerHTML = ''; 
+            document.getElementById('editModal').classList.add('active');
+            try {
+                const res = await fetch(`php/api_get_booking_details.php?id=${id}`);
+                const data = await res.json();
+                if(data && data.booking_id) {
+                    document.getElementById('editEventBadge').textContent = data.event_type;
+                    currentEditData.basePrice = parseFloat(data.base_price) || 0;
+                    document.getElementById('editBasePrice').textContent = '₱' + currentEditData.basePrice.toLocaleString();
+                    currentEditData.availableServices = data.available_services || [];
+                    const bookedSet = new Set(data.booked_service_ids);
+                    renderEditOptions(bookedSet);
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function renderEditOptions(bookedSet) {
+            const listContainer = document.getElementById('editServicesList');
+            if(currentEditData.availableServices.length === 0) {
+                listContainer.innerHTML = '<div style="padding:10px; color:#999;">No add-on services available.</div>';
+                return;
+            }
+            const grouped = {};
+            currentEditData.availableServices.forEach(s => {
+                if(!grouped[s.category]) grouped[s.category] = [];
+                grouped[s.category].push(s);
+            });
+            let html = '';
+            for(const [category, services] of Object.entries(grouped)) {
+                const itemsHtml = services.map((s) => {
+                    const index = currentEditData.availableServices.findIndex(item => item.service_id === s.service_id);
+                    const isBooked = bookedSet.has(s.service_id);
+                    const isUnavailable = (s.status === 'Unavailable' && !isBooked);
+                    const disabledAttr = isUnavailable ? 'disabled' : '';
+                    const extraClass = isUnavailable ? 'unavailable' : '';
+                    const badgeHtml = isUnavailable ? '<span class="badge-unavailable" style="float:right;">UNAVAILABLE</span>' : '';
+                    const checkedAttr = isBooked ? 'checked' : '';
+                    return `
+                    <label class="addon-item ${extraClass}" style="border: 1px solid #E5E0D8; margin-bottom: 0; padding: 12px; display:flex; align-items:center; gap:10px; border-radius:6px;">
+                        <input type="checkbox" class="addon-checkbox edit-checkbox" 
+                            value="${index}" ${checkedAttr} ${disabledAttr}
+                            onchange="updateEditSummary()" style="accent-color: var(--vino);">
+                        <div class="addon-name" style="flex:1; font-size:0.9rem; font-weight:600;">${s.service_name}</div>
+                        ${badgeHtml}
+                        <div class="addon-price" style="font-size:0.9rem; font-weight:700;">₱${parseFloat(s.price).toLocaleString()}</div>
+                    </label>`;
+                }).join('');
+                html += `<div class="addon-group" style="margin-bottom: 20px;"><div class="addon-cat-title" style="font-size: 0.85rem; color: #999; font-weight: 600; margin-bottom: 10px; text-transform: uppercase; display:flex; align-items:center; gap:10px;"><span>${category}</span><div style="height:1px; background:#eee; flex:1;"></div></div><div style="display: grid; grid-template-columns: 1fr; gap: 8px;">${itemsHtml}</div></div>`;
+            }
+            listContainer.innerHTML = html;
+            updateEditSummary();
+        }
+
+        function updateEditSummary() {
+            let activeServicesTotal = 0;
+            const summaryList = document.getElementById('editSummaryList');
+            summaryList.innerHTML = ''; 
+            const checkboxes = document.querySelectorAll('.edit-checkbox');
+            let hasItems = false;
+            checkboxes.forEach(cb => {
+                if(cb.checked) {
+                    hasItems = true;
+                    const idx = cb.value;
+                    const svc = currentEditData.availableServices[idx];
+                    const price = parseFloat(svc.price);
+                    activeServicesTotal += price;
+                    const div = document.createElement('div');
+                    div.className = 'addon-summary-item'; 
+                    div.innerHTML = `<div class="addon-summary-info"><span class="addon-name-text">${svc.service_name}</span></div><div class="addon-price-text">+₱${price.toLocaleString()}</div>`;
+                    summaryList.appendChild(div);
+                }
+            });
+            if (!hasItems) { summaryList.innerHTML = '<div style="text-align:center; color:#999; font-style:italic; padding:10px; font-size:0.9rem;">No additional services selected.</div>'; }
+            const newTotal = currentEditData.basePrice + activeServicesTotal;
+            document.getElementById('editTotalDisplay').textContent = '₱' + newTotal.toLocaleString();
+        }
+
+        async function saveBookingChanges() {
+            const id = document.getElementById('editBookingId').value;
+            const venue = document.getElementById('editVenue').value;
+            const selectedIds = [];
+            document.querySelectorAll('.edit-checkbox:checked').forEach(cb => { selectedIds.push(currentEditData.availableServices[cb.value].service_id); });
+            const saveBtn = document.querySelector('#editModal .btn-confirm-modal');
+            const originalText = saveBtn.textContent;
+            saveBtn.textContent = "Saving..."; saveBtn.disabled = true;
+            try {
+                const res = await fetch('php/api_update_booking.php', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ booking_id: id, venue_name: venue, service_ids: selectedIds }) });
+                const result = await res.json();
+                if(result.success) {
+                    closeModal('editModal');
+                    showToast('Changes Saved!', 'success');
+                    document.getElementById('receiptTitle').textContent = "Updated Request";
+                    await generateDocument(id, 'Request'); 
+                    loadBookings(); 
+                } else { showToast('Update failed.', 'error'); }
+            } catch (e) { console.error(e); }
+            saveBtn.textContent = originalText; saveBtn.disabled = false;
+        }
+
+        async function viewRequestSlip(id) { document.getElementById('receiptTitle').textContent = "Reservation Request"; await generateDocument(id, 'Request'); }
+        async function viewReceipt(id) { document.getElementById('receiptTitle').textContent = "Official Receipt"; await generateDocument(id, 'Receipt'); }
+
+        async function generateDocument(id, type) {
+            try {
+                const res = await fetch(`php/api_get_booking_details.php?id=${id}`);
+                const data = await res.json();
+                let inclusionsHtml = '';
+                if(data.inclusions && data.inclusions.length > 0) {
+                    data.inclusions.forEach(inc => { inclusionsHtml += `<tr><td style="padding-left:25px; font-size:0.85rem; color:#666; border-bottom:1px solid #fcfcfc;"><i class="fas fa-check" style="font-size:0.7rem; color:#28a745; margin-right:5px;"></i> ${inc}</td><td style="font-size:0.8rem; color:#888; border-bottom:1px solid #fcfcfc;">Included</td></tr>`; });
+                } else if(data.package_name !== 'Custom Builder') { inclusionsHtml = ''; }
+                let addonsHtml = '';
+                if(data.booked_details && data.booked_details.length > 0) {
+                    data.booked_details.forEach(s => { addonsHtml += `<tr><td>+ ${s.service_name}</td><td>₱${parseFloat(s.price).toLocaleString()}</td></tr>`; });
+                } else { addonsHtml = `<tr><td colspan="2" style="color:#999; font-style:italic; font-size:0.85rem; text-align:center; padding:10px;">No additional add-ons.</td></tr>`; }
+                const stampText = type === 'Receipt' ? 'PAID' : 'PENDING';
+                const stampColor = type === 'Receipt' ? '#2e7d32' : '#f0ad4e';
+                const titleText = type === 'Receipt' ? 'Official Receipt' : 'Reservation Request';
+                const noteHtml = type === 'Request' ? `<div style="background:#fff3cd; color:#856404; padding:10px; margin-bottom:20px; font-size:0.8rem; text-align:center; border-radius:4px;"><strong>Note:</strong> This is a request only. Please wait for Admin approval before making any payments.</div>` : '';
+                const clientName = userProfile.full_name || data.client_name || 'Valued Client';
+                const html = `<div class="web-receipt"><div class="success-stamp" style="border-color:${stampColor}; color:${stampColor};">${stampText}</div><div class="wr-header"><img src="assets/img/EOS_logo.png" class="wr-logo"><div class="wr-title">${titleText}</div><div class="wr-subtitle">EOS Event Management Systems</div></div><div class="wr-body"><div class="wr-meta-grid"><div class="wr-meta-item"><h4>Reference No.</h4><p>${data.booking_id}</p></div><div class="wr-meta-item"><h4>Date</h4><p>${new Date().toLocaleDateString()}</p></div><div class="wr-meta-item"><h4>Client</h4><p>${clientName}</p></div></div>${noteHtml}<table class="wr-table"><thead><tr><th>Description</th><th style="text-align:right;">Amount</th></tr></thead><tbody><tr><td><strong>${data.package_name || 'Event Package'}</strong></td><td><strong>₱${parseFloat(data.base_price || 0).toLocaleString()}</strong></td></tr>${inclusionsHtml}<tr><td style="padding-top:15px;">Venue: ${data.venue_name}</td><td style="padding-top:15px;">-</td></tr><tr><td colspan="2" style="border-bottom: 1px dashed #ddd; padding:10px 0; font-weight:600; color:#555; font-size:0.85rem;">ADD-ONS / EXTRAS</td></tr>${addonsHtml}<tr class="total-row"><td>TOTAL</td><td>₱${parseFloat(data.agreed_budget).toLocaleString()}</td></tr></tbody></table></div><div class="wr-footer"><p>Generated on ${new Date().toLocaleString()}</p></div></div>`;
+                document.getElementById('receiptContent').innerHTML = html;
+                document.getElementById('receiptModal').classList.add('active');
+            } catch(e) { console.error(e); }
+        }
+
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    </script>
+</body>
+</html>
